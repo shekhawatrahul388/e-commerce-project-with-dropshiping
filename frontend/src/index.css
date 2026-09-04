@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+html.dark body {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+.bg-blue-600 {
+  background-color: var(--brand-primary, #2563eb) !important;
+}
+
+.text-blue-600 {
+  color: var(--brand-primary, #2563eb) !important;
+}
+
+.border-blue-600 {
+  border-color: var(--brand-primary, #2563eb) !important;
+}
+
+.bg-blue-500,
+.bg-blue-700,
+.hover\:bg-blue-600:hover,
+.hover\:bg-blue-700:hover {
+  background-color: var(--brand-primary, #2563eb) !important;
+}
+
+.text-blue-500,
+.text-blue-700,
+.hover\:text-blue-600:hover,
+.hover\:text-blue-700:hover {
+  color: var(--brand-primary, #2563eb) !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-gray-900,
+html.dark .text-slate-800,
+html.dark .text-gray-800 {
+  color: #f9fafb !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-gray-700,
+html.dark .text-slate-600,
+html.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-gray-500,
+html.dark .text-slate-400,
+html.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-gray-200,
+html.dark .border-gray-100,
+html.dark .border-slate-100 {
+  border-color: #374151 !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #9ca3af;
+}
+
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: #374151 !important;
+}
