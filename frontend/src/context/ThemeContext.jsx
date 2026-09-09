@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://e-commerce-project-with-dropshiping.onrender.com/api";
+  "https://e-commerce-project-with-dropshiping-1.onrender.com/api";
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {

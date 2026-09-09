@@ -20,7 +20,7 @@ import {
 
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping.onrender.com/api";
+  import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping-1.onrender.com/api";
 
 
 

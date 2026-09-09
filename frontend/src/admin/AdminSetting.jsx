@@ -17,7 +17,7 @@ import {
 import { toast } from "react-hot-toast";
 import { useTheme } from "../context/ThemeContext";
 
-const API_URL = (import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping.onrender.com/api").replace(/\/api\/?$/, "");
+const API_URL = (import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping-1.onrender.com/api").replace(/\/api\/?$/, "");
 
 const AdminSetting = () => {
   const {

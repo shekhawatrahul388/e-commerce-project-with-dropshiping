@@ -44,7 +44,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://e-commerce-project-with-dropshiping.onrender.com/api";
+    "https://e-commerce-project-with-dropshiping-1.onrender.com/api";
 
   return `${baseUrl.replace(/\/api\/?$/, "")}/${String(
     image
@@ -422,7 +422,7 @@ function ProductCard({ product, hideStoreAction = false }) {
       product?.salePrice || product?.price || 0
     );
     const commissionPercent = Math.min(
-      Math.max(Number(product?.commissionPercent) || 0, 0),
+      Math.max(Number(product?.commissionPercent ?? 5), 0),
       100
     );
     const minimumPrice = Number(

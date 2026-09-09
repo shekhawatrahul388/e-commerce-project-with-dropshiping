@@ -45,7 +45,7 @@ function AdminProducts() {
     supplierProductId: "",
     supplierUrl: "",
     supplierPrice: "",
-    commissionPercent: "0",
+    commissionPercent: "5",
   };
 
 
@@ -393,7 +393,7 @@ function AdminProducts() {
         product.commissionPercent !== undefined &&
         product.commissionPercent !== null
           ? product.commissionPercent
-          : "0",
+          : "5",
     });
 
     setShowModal(true);
@@ -464,7 +464,11 @@ function AdminProducts() {
       }
     }
 
-    if (form.commissionPercent === "" || Number(form.commissionPercent) < 0 || Number(form.commissionPercent) > 100 || Number.isNaN(Number(form.commissionPercent))) {
+    if (form.commissionPercent === "") {
+      setForm((previous) => ({ ...previous, commissionPercent: "5" }));
+    }
+
+    if (form.commissionPercent !== "" && (Number(form.commissionPercent) < 0 || Number(form.commissionPercent) > 100 || Number.isNaN(Number(form.commissionPercent)))) {
       toast.error("Commission must be between 0 and 100 percent");
       return false;
     }
@@ -557,7 +561,9 @@ function AdminProducts() {
         supplierPrice:
           form.dropshipping ? Number(form.supplierPrice) : 0,
 
-        commissionPercent: Number(form.commissionPercent),
+        commissionPercent: form.commissionPercent === ""
+          ? 5
+          : Number(form.commissionPercent),
 
         tags: [],
       };
@@ -2270,7 +2276,7 @@ function AdminProducts() {
 
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-2">
-                        Dropshipper Commission %
+                        Dropshipper Commission % (default 5%)
                       </label>
                       <input
                         type="number"
@@ -2280,7 +2286,7 @@ function AdminProducts() {
                         step="0.01"
                         value={form.commissionPercent}
                         onChange={handleChange}
-                        placeholder="0"
+                        placeholder="5"
                         className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
                       />
                     </div>

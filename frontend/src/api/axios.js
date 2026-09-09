@@ -4,7 +4,7 @@ import { notifyDataUpdated } from "../utils/autoRefresh";
 const api = axios.create({
   baseURL:
     import.meta.env.VITE_API_URL ||
-    "https://e-commerce-project-with-dropshiping.onrender.com/api",
+    "https://e-commerce-project-with-dropshiping-1.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
