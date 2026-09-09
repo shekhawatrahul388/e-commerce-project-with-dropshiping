@@ -140,7 +140,7 @@ const productSchema = new mongoose.Schema(
 
     commissionPercent: {
       type: Number,
-      default: 0,
+      default: 5,
       min: 0,
       max: 100,
     },

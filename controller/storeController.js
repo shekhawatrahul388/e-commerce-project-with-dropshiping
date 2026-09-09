@@ -616,7 +616,10 @@ if (!product) {
 }
 
 const basePrice = Number(product.salePrice > 0 ? product.salePrice : product.price);
-const commissionPercent = Math.min(Math.max(Number(product.commissionPercent) || 0, 0), 100);
+const commissionPercent = Math.min(
+  Math.max(Number(product.commissionPercent ?? 5), 0),
+  100
+);
 const commissionAmount = Number((basePrice * commissionPercent / 100).toFixed(2));
 const minimumSellingPrice = Number((basePrice + commissionAmount).toFixed(2));
 const price = sellingPrice === undefined || sellingPrice === ""

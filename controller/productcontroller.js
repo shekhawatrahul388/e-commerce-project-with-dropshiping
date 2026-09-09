@@ -324,6 +324,9 @@ const buildProductData = (data, extra = {}) => {
     supplierProductId: cleanText(data.supplierProductId),
     supplierUrl: cleanText(data.supplierUrl),
     supplierPrice: dropshipping ? Number(data.supplierPrice || 0) : 0,
+    commissionPercent: hasValue(data.commissionPercent)
+      ? Math.min(Math.max(Number(data.commissionPercent), 0), 100)
+      : 5,
     tags: Array.isArray(data.tags)
       ? data.tags.map((tag) => cleanText(tag)).filter(Boolean)
       : [],
@@ -1723,6 +1726,23 @@ const updateProduct =
 
         product.supplierPrice =
           supplierPrice;
+      }
+
+      if (data.commissionPercent !== undefined) {
+        const commissionPercent = Number(data.commissionPercent);
+
+        if (
+          Number.isNaN(commissionPercent) ||
+          commissionPercent < 0 ||
+          commissionPercent > 100
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: "Commission must be between 0 and 100 percent",
+          });
+        }
+
+        product.commissionPercent = commissionPercent;
       }
 
 
