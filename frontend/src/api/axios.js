@@ -1,4 +1,5 @@
 import axios from "axios";
+import { notifyDataUpdated } from "../utils/autoRefresh";
 
 const api = axios.create({
   baseURL:
@@ -28,6 +29,19 @@ api.interceptors.request.use(
   (error) => {
     return Promise.reject(error);
   }
+);
+
+api.interceptors.response.use(
+  (response) => {
+    const method = response.config?.method?.toLowerCase();
+
+    if (["post", "put", "patch", "delete"].includes(method)) {
+      notifyDataUpdated();
+    }
+
+    return response;
+  },
+  (error) => Promise.reject(error)
 );
 
 export default api;

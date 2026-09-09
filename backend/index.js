@@ -5,38 +5,23 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const Store = require("./models/Store");
+// const DNS = require("dns");
+// DNS.setServers(["1.1.1.1"]);
 
-const DNS = require("dns");
-DNS.setServers(["1.1.1.1" , "8.8.8.8"]);
+const dnsServers = process.env.MONGO_DNS_SERVERS
+  ?.split(",")
+  .map((server) => server.trim())
+  .filter(Boolean);
 
+if (dnsServers?.length) {
+  require("dns").setServers(dnsServers);
+}
 
 const app = express();
-app.set("trust proxy", 1);
-
-const corsOptions = {
-  origin: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Backend is running",
-  });
-});
 
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Backend is running",
-  });
-});
 
 app.use(
   "/uploads",
@@ -45,8 +30,8 @@ app.use(
   )
 );
 
-const PORT = process.env.PORT || 2000;
 const mongoUri = process.env.MONGO_URI;
+const PORT = process.env.PORT || 2000;
 
 
 
@@ -89,18 +74,6 @@ app.use(
   uploadRoutes
 );
 
-app.use((error, req, res, next) => {
-  console.error("REQUEST ERROR:", error);
-
-  if (res.headersSent) {
-    return next(error);
-  }
-
-  return res.status(500).json({
-    success: false,
-    message: error.message || "Image upload failed",
-  });
-});
 
 const navbarRouter = require("./router/navbarRouter")
 app.use("/api/navbar" , navbarRouter)
@@ -144,25 +117,33 @@ app.use(
   supplierRoutes
 );
 
+const connectToMongo = async (attempt = 1) => {
+  try {
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      family: 4,
+    });
+  } catch (error) {
+    if (attempt >= 5) {
+      throw error;
+    }
+
+    const delay = Math.min(attempt * 2000, 8000);
+    console.error(
+      `MongoDB connection attempt ${attempt} failed: ${error.message}. Retrying in ${delay / 1000}s...`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return connectToMongo(attempt + 1);
+  }
+};
+
 const startServer = async () => {
   if (!mongoUri) {
     throw new Error("MONGO_URI is not configured.");
   }
 
-  await mongoose.connect(mongoUri, {
-    serverSelectionTimeoutMS: 5000,
-  });
-
-  for (const indexName of ["owner_1", "subdomain_1"]) {
-    try {
-      await Store.collection.dropIndex(indexName);
-      console.log(`Removed obsolete stores index: ${indexName}`);
-    } catch (error) {
-      if (error.codeName !== "IndexNotFound" && error.code !== 27) {
-        throw error;
-      }
-    }
-  }
+  await connectToMongo();
 
   console.log("Connected to MongoDB");
   app.listen(PORT, () => {
@@ -171,9 +152,7 @@ const startServer = async () => {
 };
 
 startServer().catch((error) => {
-  console.error("MongoDB connection failed. Check MONGO_URI or start a local MongoDB instance.");
-  console.error(error.message);
+  console.error("MongoDB connection failed:", error.message);
   process.exitCode = 1;
 });
-
 

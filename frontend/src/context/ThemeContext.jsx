@@ -17,25 +17,61 @@ export function ThemeProvider({ children }) {
   const setThemeMode = (mode) => {
     const nextMode = mode === "dark" ? "dark" : "light";
     setThemeModeState(nextMode);
+    localStorage.setItem("theme-mode", nextMode);
   };
 
   const setPrimaryColor = (color) => {
     if (!/^#[0-9a-fA-F]{6}$/.test(color)) return;
     setPrimaryColorState(color);
+    localStorage.setItem("primary-color", color.toLowerCase());
   };
 
   useEffect(() => {
-    axios.get(`${API_URL}/settings`, { timeout: 5000 })
-      .then(({ data }) => {
+    let active = true;
+
+    const loadAppearance = async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/settings`, { timeout: 5000 });
         const settings = data?.settings || {};
-        if (!localStorage.getItem("theme-mode")) {
-          setThemeMode(settings.themeMode === "dark" ? "dark" : "light");
+
+        if (!active) return;
+
+        const serverMode = settings.themeMode === "dark" ? "dark" : "light";
+        const serverColor = settings.primaryColor;
+
+        setThemeModeState(serverMode);
+        localStorage.setItem("theme-mode", serverMode);
+
+        if (/^#[0-9a-fA-F]{6}$/.test(serverColor || "")) {
+          setPrimaryColorState(serverColor.toLowerCase());
+          localStorage.setItem("primary-color", serverColor.toLowerCase());
         }
-        if (!localStorage.getItem("primary-color") && /^#[0-9a-fA-F]{6}$/.test(settings.primaryColor || "")) {
-          setPrimaryColor(settings.primaryColor);
-        }
-      })
-      .catch(() => {});
+      } catch {
+        // Keep the locally cached appearance when the settings API is unavailable.
+      }
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === "theme-mode" && ["light", "dark"].includes(event.newValue)) {
+        setThemeModeState(event.newValue);
+      }
+
+      if (event.key === "primary-color" && /^#[0-9a-fA-F]{6}$/.test(event.newValue || "")) {
+        setPrimaryColorState(event.newValue);
+      }
+    };
+
+    loadAppearance();
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", loadAppearance);
+    const timer = window.setInterval(loadAppearance, 30000);
+
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", loadAppearance);
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {

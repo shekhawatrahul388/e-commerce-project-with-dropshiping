@@ -4,6 +4,8 @@ const Category = require("../models/category");
 const Cart = require("../models/cart");
 const Wishlist = require("../models/wishlist");
 const Address = require("../models/Address");
+const Store = require("../models/Store");
+const StoreProduct = require("../models/StoreProduct");
 
 const getAdminDashboard = async (req, res) => {
   try {
@@ -19,6 +21,12 @@ const getAdminDashboard = async (req, res) => {
       totalCarts,
       totalWishlists,
       totalAddresses,
+      totalStores,
+      totalStoreProducts,
+      totalCartItems,
+      totalWishlistItems,
+      recentUsers,
+      stores,
     ] = await Promise.all([
       User.countDocuments({ role: "user" }),
       User.countDocuments({ role: "admin" }),
@@ -31,6 +39,25 @@ const getAdminDashboard = async (req, res) => {
       Cart.countDocuments(),
       Wishlist.countDocuments(),
       Address.countDocuments(),
+      Store.countDocuments({ status: "active" }),
+      StoreProduct.countDocuments(),
+      Cart.aggregate([
+        { $unwind: "$items" },
+        { $group: { _id: null, total: { $sum: "$items.quantity" } } },
+      ]),
+      Wishlist.aggregate([
+        { $project: { total: { $size: "$products" } } },
+        { $group: { _id: null, total: { $sum: "$total" } } },
+      ]),
+      User.find({}, "name phone role isVerified createdAt")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+      Store.find({ status: "active" }, "storeName storeSlug storeUrl username user createdAt")
+        .populate("user", "name phone role")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
     ]);
 
     res.status(200).json({
@@ -56,15 +83,23 @@ const getAdminDashboard = async (req, res) => {
 
         cart: {
           totalCarts,
+          totalItems: totalCartItems[0]?.total || 0,
         },
 
         wishlist: {
           totalWishlists,
+          totalItems: totalWishlistItems[0]?.total || 0,
         },
 
         addresses: {
           total: totalAddresses,
         },
+        stores: {
+          total: totalStores,
+          products: totalStoreProducts,
+          recent: stores,
+        },
+        recentUsers,
         totalOrders: 0,
         pendingOrders: 0,
         deliveredOrders: 0,

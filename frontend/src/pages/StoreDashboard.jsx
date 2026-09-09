@@ -4,11 +4,13 @@ import { Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
 import { getStoreUrl } from "../utils/storeUrl";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 function StoreDashboard() {
   const [store, setStore] = useState(null); const [products, setProducts] = useState([]); const [catalog, setCatalog] = useState([]); const [loading, setLoading] = useState(true);
   const load = async () => { try { const [storeResponse, productsResponse, catalogResponse] = await Promise.all([api.get("/dropshippers/me"), api.get("/dropshippers/products"), api.get("/product/all?limit=100")]); setStore(storeResponse.data.store); setProducts(productsResponse.data.products || []); setCatalog(catalogResponse.data.products || []); } catch (error) { toast.error(error?.response?.data?.message || "Unable to load dashboard"); } finally { setLoading(false); } };
   useEffect(() => { load(); }, []);
+  useAutoRefresh(load);
   const add = async (product) => { const price = window.prompt("Selling price", String(product.salePrice || product.price || 0)); if (price === null) return; try { await api.post("/dropshippers/products", { productId: product._id, sellingPrice: Number(price) }); toast.success("Added to your store"); load(); } catch (error) { toast.error(error?.response?.data?.message || "Unable to add product"); } };
   const remove = async (id) => { try { await api.delete(`/dropshippers/products/${id}`); setProducts(products.filter((item) => item._id !== id)); } catch { toast.error("Unable to remove product"); } };
   if (loading) return <main className="p-10 text-center text-gray-500">Loading dashboard...</main>;

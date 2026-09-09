@@ -18,7 +18,7 @@ import AdminLayout from "./admin/AdminLayout";
 import AdminDashboard from "./admin/AdminDeshboard";
 import AdminProducts from "./admin/AdminProducts";
 import AdminCategories from "./admin/AdminCategories";
-import AdminSuppliers from "./admin/AdminSuppliers";
+import AdminDropshipping from "./admin/AdminDropshipping";
 import AdminBanners from "./admin/AdminBanners";
 import AdminFooter from "./admin/AdminFooter";
 import AdminWhatsapp from "./admin/AdminWhatsapp";
@@ -27,6 +27,7 @@ import AdminSetting from "./admin/AdminSetting";
 import PublicStore from "./pages/PublicStore";
 import CreateStore from "./pages/CreateStore";
 import StoreDashboard from "./pages/StoreDashboard";
+import Support from "./pages/Support";
 
 function NotFound() {
   return (
@@ -67,6 +68,7 @@ function App() {
           }
         />
         <Route path="/address" element={<Address />} />
+        <Route path="/support" element={<Support />} />
         <Route
           path="/my-products"
           element={
@@ -83,7 +85,7 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />
-            <Route path="suppliers" element={<AdminSuppliers />} />
+            <Route path="dropshipping" element={<AdminDropshipping />} />
             <Route path="banners" element={<AdminBanners />} />
             <Route path="footer" element={<AdminFooter />} />
             <Route path="whatsapp" element={<AdminWhatsapp />} />

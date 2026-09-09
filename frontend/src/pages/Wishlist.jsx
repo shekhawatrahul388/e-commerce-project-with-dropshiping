@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 
 
@@ -206,6 +207,8 @@ function Wishlist() {
     loadWishlist();
   }, []);
 
+  useAutoRefresh(loadWishlist);
+
 
 
   const removeFromWishlist = async (productId) => {
@@ -233,6 +236,7 @@ function Wishlist() {
             String(productId)
         )
       );
+      window.dispatchEvent(new Event("wishlist-updated"));
 
       toast.success(
         "Removed from wishlist"
@@ -321,6 +325,7 @@ function Wishlist() {
             String(productId)
         )
       );
+      window.dispatchEvent(new Event("wishlist-updated"));
 
       toast.success(
         "Product moved to cart"
@@ -369,6 +374,7 @@ function Wishlist() {
       );
 
       setWishlist([]);
+      window.dispatchEvent(new Event("wishlist-updated"));
 
       toast.success(
         "Wishlist cleared successfully"

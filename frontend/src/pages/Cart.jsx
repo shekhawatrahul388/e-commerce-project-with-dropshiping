@@ -16,9 +16,16 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 function Cart() {
   const navigate = useNavigate();
+  const {
+    updateQuantity: updateSharedQuantity,
+    removeFromCart: removeSharedItem,
+    clearCart: clearSharedCart,
+  } = useCart();
 
 
 
@@ -104,6 +111,8 @@ function Cart() {
   useEffect(() => {
     loadCart();
   }, []);
+
+  useAutoRefresh(loadCart);
 
 
 
@@ -246,21 +255,15 @@ function Cart() {
     try {
       setUpdatingId(productId);
 
-      const response = await api.put(
-        `/cart/update/${productId}`,
-        {
-          quantity: newQuantity,
-        }
+      const result = await updateSharedQuantity(
+        productId,
+        newQuantity
       );
 
-      console.log(
-        "UPDATE CART RESPONSE:",
-        response.data
-      );
+      if (!result?.success) return;
 
-      const updatedCart =
-        response.data?.cart ||
-        response.data?.data;
+      const response = result.data;
+      const updatedCart = response?.cart || response?.data;
 
       if (updatedCart) {
         setCart(updatedCart);
@@ -302,18 +305,12 @@ function Cart() {
     try {
       setRemovingId(productId);
 
-      const response = await api.delete(
-        `/cart/remove/${productId}`
-      );
+      const result = await removeSharedItem(productId);
 
-      console.log(
-        "REMOVE CART RESPONSE:",
-        response.data
-      );
+      if (!result?.success) return;
 
-      const updatedCart =
-        response.data?.cart ||
-        response.data?.data;
+      const response = result.data;
+      const updatedCart = response?.cart || response?.data;
 
       if (updatedCart) {
         setCart(updatedCart);
@@ -370,7 +367,9 @@ function Cart() {
     try {
       setClearLoading(true);
 
-      await api.delete("/cart/clear");
+      const result = await clearSharedCart();
+
+      if (!result?.success) return;
 
       setItems([]);
       setCart(null);

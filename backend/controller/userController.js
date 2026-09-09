@@ -28,14 +28,17 @@ const sendOtp = async (req, res) => {
       phone: phoneNumber,
     });
 
-    if (!user) {
-      user = new User({
-        name: userName,
-        phone: phoneNumber,
+    if (user) {
+      return res.status(409).json({
+        success: false,
+        message: "This number is already registered. Please login.",
       });
-    } else {
-      user.name = userName;
     }
+
+    user = new User({
+      name: userName,
+      phone: phoneNumber,
+    });
 
     const otp = process.env.OTP || "123456";
 
@@ -55,6 +58,44 @@ const sendOtp = async (req, res) => {
   } catch (error) {
     console.error("SEND OTP ERROR:", error);
 
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+
+const sendLoginOtp = async (req, res) => {
+  try {
+    const phoneNumber = String(req.body.phone || "").trim();
+
+    if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid 10 digit phone number",
+      });
+    }
+
+    const user = await User.findOne({ phone: phoneNumber });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Number is not registered. Please register first.",
+      });
+    }
+
+    user.otp = String(process.env.OTP || "123456");
+    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Login OTP sent successfully",
+    });
+  } catch (error) {
+    console.error("SEND LOGIN OTP ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -432,6 +473,7 @@ const updateUserRole = async (req, res) => {
 
 module.exports = {
   sendOtp,
+  sendLoginOtp,
   verifyOtp,
   getProfile,
   updateProfile,

@@ -2,6 +2,7 @@ const express = require("express");
 
 const {
   sendOtp,
+    sendLoginOtp,
   verifyOtp,
   getProfile,
   updateProfile,
@@ -19,6 +20,8 @@ const router = express.Router();
 
 
 router.post("/send-otp", sendOtp);
+
+router.post("/login-otp", sendLoginOtp);
 
 router.post("/verify-otp", verifyOtp);
 

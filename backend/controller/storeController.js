@@ -615,12 +615,18 @@ if (!product) {
   });
 }
 
-const price = Number(sellingPrice);
+const basePrice = Number(product.salePrice > 0 ? product.salePrice : product.price);
+const commissionPercent = Math.min(Math.max(Number(product.commissionPercent) || 0, 0), 100);
+const commissionAmount = Number((basePrice * commissionPercent / 100).toFixed(2));
+const minimumSellingPrice = Number((basePrice + commissionAmount).toFixed(2));
+const price = sellingPrice === undefined || sellingPrice === ""
+  ? minimumSellingPrice
+  : Number(sellingPrice);
 
-if (!Number.isFinite(price) || price < 0) {
+if (!Number.isFinite(price) || price < minimumSellingPrice) {
   return res.status(400).json({
     success: false,
-    message: "Valid selling price is required",
+    message: `Selling price must be at least ₹${minimumSellingPrice}`,
   });
 }
 
@@ -628,6 +634,8 @@ const row = await StoreProduct.create({
   store: store._id,
   product: product._id,
   sellingPrice: price,
+  basePrice,
+  commissionAmount,
 });
 
 return res.status(201).json({

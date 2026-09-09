@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Search,
   RefreshCw,
@@ -27,6 +28,7 @@ const AdminUser = () => {
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [adminForm, setAdminForm] = useState({ name: "", phone: "" });
   const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [storeOwners, setStoreOwners] = useState([]);
 
   const createAdmin = async (event) => {
     event.preventDefault();
@@ -77,6 +79,16 @@ const AdminUser = () => {
       setUsers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStoreOwners = async () => {
+    try {
+      const response = await api.get("/admin/dropshipping-stores");
+      setStoreOwners(response.data?.stores || []);
+    } catch (error) {
+      console.error("GET DROPSHIPPING STORES ERROR:", error);
+      setStoreOwners([]);
     }
   };
 
@@ -202,7 +214,17 @@ const AdminUser = () => {
 
   useEffect(() => {
     getUsers();
+    getStoreOwners();
   }, []);
+
+  const storesByPhone = useMemo(() => {
+    return new Map(
+      storeOwners.map((store) => [
+        String(store.user?.phone || ""),
+        store,
+      ])
+    );
+  }, [storeOwners]);
 
 
 
@@ -508,6 +530,10 @@ const AdminUser = () => {
                       Status
                     </th>
 
+                    <th className="px-6 py-4 text-left text-xs font-black uppercase tracking-wide text-gray-500">
+                      Dropshipping
+                    </th>
+
                     <th className="px-6 py-4 text-right text-xs font-black uppercase tracking-wide text-gray-500">
                       Action
                     </th>
@@ -538,6 +564,8 @@ const AdminUser = () => {
                     const userPhone =
                       user?.phone ||
                       "No phone";
+
+                    const userStore = storesByPhone.get(String(user?.phone || ""));
 
                     const userId =
                       String(
@@ -578,6 +606,24 @@ const AdminUser = () => {
 
                           </div>
 
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {userStore ? (
+                            <div>
+                              <span className="inline-flex rounded-full bg-blue-100 px-3 py-1.5 text-xs font-bold text-blue-700">
+                                Store owner
+                              </span>
+                              <p className="mt-1 max-w-40 truncate text-xs text-gray-500" title={userStore.storeName}>
+                                {userStore.storeName} · {userStore.products?.length || 0} products
+                              </p>
+                              <Link to="/admin/dropshipping" className="text-xs font-semibold text-blue-600 hover:underline">
+                                Check account
+                              </Link>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">No store</span>
+                          )}
                         </td>
 
                         

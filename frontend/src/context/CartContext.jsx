@@ -10,6 +10,7 @@ import {
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
 import { useAuth } from "./AuthContext";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 
 
@@ -161,6 +162,10 @@ export function CartProvider({ children }) {
     getCart,
     resetCart,
   ]);
+
+  useAutoRefresh(() => getCart(false), {
+    enabled: isAuthenticated,
+  });
 
 
 

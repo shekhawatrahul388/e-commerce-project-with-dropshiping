@@ -21,6 +21,7 @@ import { toast } from "react-hot-toast";
 
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import api from "../api/axios";
 
 const API_URL = (import.meta.env.VITE_API_URL || "https://dropshiping-products-backend-3.onrender.com/api").replace(/\/api\/?$/, "");
 
@@ -91,7 +92,29 @@ function Navbar() {
   const [siteTagline, setSiteTagline] =
     useState("Shop smarter");
 
+  const [wishlistCount, setWishlistCount] = useState(0);
+
   const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const loadWishlistCount = async () => {
+      if (!isAuthenticated) {
+        setWishlistCount(0);
+        return;
+      }
+
+      try {
+        const response = await api.get("/wishlist");
+        setWishlistCount(response.data?.wishlist?.products?.length || 0);
+      } catch (error) {
+        setWishlistCount(0);
+      }
+    };
+
+    loadWishlistCount();
+    window.addEventListener("wishlist-updated", loadWishlistCount);
+    return () => window.removeEventListener("wishlist-updated", loadWishlistCount);
+  }, [isAuthenticated, user?._id, location.pathname]);
 
 
 
@@ -239,6 +262,29 @@ function Navbar() {
   useEffect(() => {
     let mounted = true;
 
+    api.get("/settings")
+      .then((response) => {
+        if (!mounted) return;
+
+        const settings = response.data?.settings || response.data?.data || response.data;
+
+        if (settings?.siteName) setSiteName(settings.siteName);
+        if (settings?.logo) setLogo(settings.logo);
+        if (settings?.tagline) setSiteTagline(settings.tagline);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setNavbarLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
     axios
       .get(`${API_URL}/api/settings`, { timeout: 5000 })
       .then((response) => {
@@ -361,6 +407,7 @@ function Navbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("wishlist");
+    setWishlistCount(0);
 
     setUserMenu(false);
     setMobileMenu(false);
@@ -552,13 +599,18 @@ function Navbar() {
 
             <Link
               to="/wishlist"
-              className={`hidden sm:flex w-10 h-10 items-center justify-center rounded-xl transition ${
+              className={`relative hidden sm:flex w-10 h-10 items-center justify-center rounded-xl transition ${
                 isActive("/wishlist")
                   ? "bg-red-50 text-red-500"
                   : "text-gray-600 hover:bg-red-50 hover:text-red-500"
               }`}
             >
               <Heart size={21} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4.75 h-4.75 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-white">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Link>
 
             
@@ -869,6 +921,11 @@ function Navbar() {
                 >
                   <Heart size={19} />
                   Wishlist
+                  {wishlistCount > 0 && (
+                    <span className="ml-auto min-w-6 h-6 px-2 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-black">
+                      {wishlistCount > 99 ? "99+" : wishlistCount}
+                    </span>
+                  )}
                 </Link>
 
                 <Link

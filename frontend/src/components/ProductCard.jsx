@@ -8,10 +8,12 @@ import {
   Eye,
   Check,
   Loader2,
-  Store,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 
 
@@ -51,8 +53,14 @@ const getImageUrl = (image) => {
 
 
 
-function ProductCard({ product }) {
+function ProductCard({ product, hideStoreAction = false }) {
   const navigate = useNavigate();
+  const {
+    addToCart,
+    cartItems,
+    updateQuantity,
+    updating,
+  } = useCart();
   const productId = product?._id || product?.id;
 
   const [isWishlisted, setIsWishlisted] =
@@ -64,11 +72,12 @@ function ProductCard({ product }) {
   const [loadingWishlist, setLoadingWishlist] =
     useState(false);
 
-  const [addingStore, setAddingStore] =
-    useState(false);
-
   const [imageLoaded, setImageLoaded] =
     useState(false);
+
+  const [hasStore, setHasStore] = useState(false);
+  const [isInStore, setIsInStore] = useState(false);
+  const [addingToStore, setAddingToStore] = useState(false);
 
 
 
@@ -133,30 +142,88 @@ function ProductCard({ product }) {
 
   const outOfStock = stock <= 0;
 
+  const cartItem = cartItems?.find((item) => {
+    const itemProductId = item?.product?._id || item?.product?.id || item?.productId;
+    return String(itemProductId) === String(productId);
+  });
+
+  const cartQuantity = Number(cartItem?.quantity || 0);
+
 
 
   useEffect(() => {
     if (!productId) return;
 
-    try {
-      const wishlist = JSON.parse(
-        localStorage.getItem("wishlist") ||
-          "[]"
-      );
+    if (!localStorage.getItem("token")) return;
 
-      const exists = wishlist.some(
-        (item) =>
-          item === productId ||
-          item?._id === productId
-      );
+    const loadWishlistStatus = async () => {
+      try {
+        const response = await api.get("/wishlist");
+        const data = response.data?.wishlist || response.data?.data || response.data;
+        const products = Array.isArray(data)
+          ? data
+          : data?.products || data?.items || [];
 
-      setIsWishlisted(exists);
-    } catch (error) {
-      console.log(
-        "Wishlist check error:",
-        error
-      );
-    }
+        setIsWishlisted(products.some((item) => {
+          const itemId =
+            item?._id ||
+            item?.id ||
+            item?.product?._id ||
+            item?.product?.id ||
+            item?.productId;
+
+          return String(itemId) === String(productId);
+        }));
+      } catch (error) {
+        console.log("Wishlist check error:", error?.response?.data || error.message);
+      }
+    };
+
+    loadWishlistStatus();
+    window.addEventListener("wishlist-updated", loadWishlistStatus);
+
+    return () => {
+      window.removeEventListener("wishlist-updated", loadWishlistStatus);
+    };
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId || !localStorage.getItem("token")) return;
+
+    let active = true;
+
+    Promise.all([
+      api.get("/dropshippers/me"),
+      api.get("/dropshippers/products"),
+    ])
+      .then(([storeResponse, productsResponse]) => {
+        if (!active) return;
+
+        const store = storeResponse.data?.store;
+        const products = productsResponse.data?.products || [];
+        const selected = products.some((item) => {
+          const selectedProduct = item?.product;
+          const selectedId =
+            selectedProduct?._id ||
+            selectedProduct?.id ||
+            item?.productId;
+
+          return String(selectedId) === String(productId);
+        });
+
+        setHasStore(Boolean(store));
+        setIsInStore(selected);
+      })
+      .catch(() => {
+        if (active) {
+          setHasStore(false);
+          setIsInStore(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [productId]);
 
   if (!product) return null;
@@ -211,20 +278,16 @@ function ProductCard({ product }) {
     try {
       setAddingCart(true);
 
-      const response =
-        await api.post(
-          "/cart/add",
-          {
-            productId,
-            quantity: 1,
-            storeSlug: product.storeSlug || "",
-          }
-        );
-
-      toast.success(
-        response.data?.message ||
-          "Product added to cart"
-      );
+      if (typeof addToCart === "function") {
+        await addToCart(productId, 1);
+      } else {
+        await api.post("/cart/add", {
+          productId,
+          quantity: 1,
+          storeSlug: product.storeSlug || "",
+        });
+        toast.success("Product added to cart");
+      }
     } catch (error) {
       console.log(
         "Add cart error:",
@@ -254,6 +317,14 @@ function ProductCard({ product }) {
     } finally {
       setAddingCart(false);
     }
+  };
+
+  const handleQuantityChange = async (e, quantity) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!cartItem || quantity < 0 || quantity > stock) return;
+    await updateQuantity(productId, quantity);
   };
 
 
@@ -289,47 +360,22 @@ function ProductCard({ product }) {
     try {
       setLoadingWishlist(true);
 
-      const oldWishlist =
-        JSON.parse(
-          localStorage.getItem(
-            "wishlist"
-          ) || "[]"
-        );
-
       if (isWishlisted) {
-        const updatedWishlist =
-          oldWishlist.filter(
-            (item) =>
-              item !== productId &&
-              item?._id !== productId
-          );
-
-        localStorage.setItem(
-          "wishlist",
-          JSON.stringify(
-            updatedWishlist
-          )
-        );
+        await api.delete(`/wishlist/remove/${productId}`);
 
         setIsWishlisted(false);
+        window.dispatchEvent(new Event("wishlist-updated"));
 
         toast.success(
           "Removed from wishlist"
         );
       } else {
-        const updatedWishlist = [
-          ...oldWishlist,
+        await api.post("/wishlist/add", {
           productId,
-        ];
-
-        localStorage.setItem(
-          "wishlist",
-          JSON.stringify(
-            updatedWishlist
-          )
-        );
+        });
 
         setIsWishlisted(true);
+        window.dispatchEvent(new Event("wishlist-updated"));
 
         toast.success(
           "Added to wishlist"
@@ -349,62 +395,66 @@ function ProductCard({ product }) {
     }
   };
 
-  const handleAddToStore = async (e) => {
+  const handleInquiry = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!localStorage.getItem("token")) {
-      toast.error("Please login to create a store");
-      navigate("/send-otp", { state: { from: "/products" } });
-      return;
-    }
+
     try {
-      setAddingStore(true);
-      await api.post("/dropshippers/products", { productId, sellingPrice: price });
-      toast.success("Product added to your store");
+      const response = await api.post("/whatsapp/product-inquiry", {
+        productId,
+        storeSlug: product.storeSlug || "",
+      });
+      if (response.data?.whatsappUrl) {
+        window.open(response.data.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
     } catch (error) {
-      if (error?.response?.status === 404) navigate("/create-store");
-      else toast.error(error?.response?.data?.message || "Unable to add product to store");
-    } finally {
-      setAddingStore(false);
+      toast.error(error?.response?.data?.message || "WhatsApp inquiry is unavailable");
     }
   };
 
+  const handleAddToStore = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
+    if (isInStore) return;
 
-  const whatsappNumber =
-    localStorage.getItem(
-      "whatsappNumber"
-    ) || "";
-
-  const cleanWhatsapp =
-    String(whatsappNumber).replace(
-      /\D/g,
-      ""
+    const basePrice = Number(
+      product?.salePrice || product?.price || 0
+    );
+    const commissionPercent = Math.min(
+      Math.max(Number(product?.commissionPercent) || 0, 0),
+      100
+    );
+    const minimumPrice = Number(
+      (basePrice * (1 + commissionPercent / 100)).toFixed(2)
+    );
+    const sellingPrice = window.prompt(
+      "Enter your selling price",
+      String(minimumPrice)
     );
 
-  let whatsappPhone =
-    cleanWhatsapp;
+    if (sellingPrice === null) return;
 
-  if (whatsappPhone.length === 10) {
-    whatsappPhone =
-      `91${whatsappPhone}`;
-  }
-
-  const whatsappMessage =
-    `Hello, I am interested in this product.\n\n` +
-    `Product: ${name}\n` +
-    `Price: ₹${price.toLocaleString(
-      "en-IN"
-    )}\n` +
-    `Product ID: ${productId}\n\n` +
-    `Please share more details.`;
-
-  const whatsappUrl =
-    `https://wa.me/${
-      whatsappPhone || ""
-    }?text=${encodeURIComponent(
-      whatsappMessage
-    )}`;
+    try {
+      setAddingToStore(true);
+      await api.post("/dropshippers/products", {
+        productId,
+        sellingPrice: Number(sellingPrice),
+      });
+      setIsInStore(true);
+      toast.success("Product added to your store");
+    } catch (error) {
+      if (error?.response?.status === 409) {
+        setIsInStore(true);
+      }
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to add product to your store"
+      );
+    } finally {
+      setAddingToStore(false);
+    }
+  };
 
 
 
@@ -650,46 +700,49 @@ function ProductCard({ product }) {
 
           
 
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={
-              addingCart ||
-              outOfStock
-            }
-            className={`h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition ${
-              outOfStock
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100"
-            }`}
-          >
-            {addingCart ? (
-              <Loader2
-                size={18}
-                className="animate-spin"
-              />
-            ) : (
-              <ShoppingCart
-                size={18}
-              />
-            )}
-
-            {addingCart
-              ? "Adding..."
-              : outOfStock
-              ? "Out of Stock"
-              : "Add to Cart"}
-          </button>
+          {cartQuantity > 0 ? (
+            <div className="h-11 rounded-xl bg-blue-600 text-white flex items-center justify-between px-2 shadow-md shadow-blue-100">
+              <button
+                type="button"
+                onClick={(e) => handleQuantityChange(e, cartQuantity - 1)}
+                disabled={updating}
+                aria-label="Decrease quantity"
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="text-sm font-black">{cartQuantity}</span>
+              <button
+                type="button"
+                onClick={(e) => handleQuantityChange(e, cartQuantity + 1)}
+                disabled={updating || cartQuantity >= stock}
+                aria-label="Increase quantity"
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={addingCart || outOfStock}
+              className={`h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition ${
+                outOfStock
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100"
+              }`}
+            >
+              {addingCart ? <Loader2 size={18} className="animate-spin" /> : <ShoppingCart size={18} />}
+              {addingCart ? "Adding..." : outOfStock ? "Out of Stock" : "Add to Cart"}
+            </button>
+          )}
 
           
 
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+          <button
+            type="button"
+            onClick={handleInquiry}
             className="h-11 rounded-xl bg-green-50 text-green-600 border border-green-100 hover:bg-green-500 hover:text-white font-bold text-sm flex items-center justify-center gap-2 transition"
           >
             <MessageCircle
@@ -703,18 +756,33 @@ function ProductCard({ product }) {
             <span className="sm:hidden">
               Chat
             </span>
-          </a>
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddToStore}
-          disabled={addingStore || outOfStock}
-          className="mt-2 h-10 w-full rounded-xl border border-blue-200 text-sm font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {addingStore ? <Loader2 size={16} className="animate-spin" /> : <Store size={16} />}
-          {addingStore ? "Adding..." : "Add to My Store"}
-        </button>
+        {hasStore && !hideStoreAction && (
+          <button
+            type="button"
+            onClick={handleAddToStore}
+            disabled={isInStore || addingToStore}
+            className={`mt-2 w-full h-10 rounded-xl border font-bold text-sm flex items-center justify-center gap-2 transition ${
+              isInStore
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+            }`}
+          >
+            {addingToStore ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : isInStore ? (
+              <Check size={16} />
+            ) : null}
+            {addingToStore
+              ? "Adding..."
+              : isInStore
+                ? "Added to my store"
+                : "Add to my store"}
+          </button>
+        )}
+
       </div>
 
       

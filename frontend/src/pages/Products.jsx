@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 
 
@@ -100,6 +102,7 @@ const matchesCategory = (productCategory, selectedCategory) => {
 function Products() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { addToCart: addProductToCart } = useCart();
 
 
 
@@ -127,6 +130,8 @@ function Products() {
 
   const [cartLoading, setCartLoading] = useState(null);
   const [wishlistLoading, setWishlistLoading] = useState(null);
+  const [store, setStore] = useState(null);
+  const [storeProductLoading, setStoreProductLoading] = useState(null);
 
   const [visibleCount, setVisibleCount] = useState(12);
 
@@ -168,6 +173,23 @@ function Products() {
     loadProducts();
   }, []);
 
+  useAutoRefresh(loadProducts);
+
+  useEffect(() => {
+    if (!localStorage.getItem("token")) {
+      setStore(null);
+      return;
+    }
+
+    api.get("/dropshippers/me")
+      .then((response) => {
+        setStore(response.data?.store || null);
+      })
+      .catch(() => {
+        setStore(null);
+      });
+  }, []);
+
 
 
   const loadWishlist = async () => {
@@ -186,12 +208,11 @@ function Products() {
         response.data?.data ??
         response.data;
 
-      if (!Array.isArray(data)) {
-        setWishlist([]);
-        return;
-      }
+      const items = Array.isArray(data)
+        ? data
+        : data?.products || data?.items || [];
 
-      const ids = data
+      const ids = items
         .map((item) => {
           if (typeof item === "string") {
             return item;
@@ -227,6 +248,8 @@ function Products() {
   useEffect(() => {
     loadWishlist();
   }, []);
+
+  useAutoRefresh(loadWishlist);
 
 
 
@@ -469,13 +492,7 @@ function Products() {
 
     try {
       setCartLoading(productId);
-
-      await api.post("/cart/add", {
-        productId,
-        quantity: 1,
-      });
-
-      toast.success("Added to cart");
+      await addProductToCart(productId, 1);
     } catch (err) {
       console.error(
         "Cart error:",
@@ -488,6 +505,40 @@ function Products() {
       );
     } finally {
       setCartLoading(null);
+    }
+  };
+
+  const addToStore = async (product) => {
+    const productId = getProductId(product);
+    const basePrice = Number(product?.salePrice || product?.price || 0);
+    const commissionPercent = Math.min(
+      Math.max(Number(product?.commissionPercent) || 0, 0),
+      100
+    );
+    const minimumPrice = Number(
+      (basePrice * (1 + commissionPercent / 100)).toFixed(2)
+    );
+    const sellingPrice = window.prompt(
+      "Enter your selling price",
+      String(minimumPrice)
+    );
+
+    if (sellingPrice === null) return;
+
+    try {
+      setStoreProductLoading(productId);
+      await api.post("/dropshippers/products", {
+        productId,
+        sellingPrice: Number(sellingPrice),
+      });
+      toast.success("Product added to your store");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to add product to your store"
+      );
+    } finally {
+      setStoreProductLoading(null);
     }
   };
 
@@ -967,6 +1018,21 @@ function Products() {
                 </>
               )}
             </button>
+
+            {store && (
+              <button
+                type="button"
+                disabled={storeProductLoading === productId}
+                onClick={() => addToStore(product)}
+                className="col-span-2 h-10 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-sm flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+              >
+                {storeProductLoading === productId ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  "Add to my store"
+                )}
+              </button>
+            )}
           </div>
         </div>
       </article>

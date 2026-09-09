@@ -2,6 +2,12 @@ const SiteSettings = require("../models/SiteSettings");
 const Product = require("../models/product");
 const Cart = require("../models/cart");
 const Address = require("../models/Address");
+const Store = require("../models/Store");
+
+const whatsappPhone = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  return digits.length === 10 ? `91${digits}` : digits;
+};
 
 
 
@@ -183,6 +189,7 @@ const createProductInquiry = async (
     const {
       productId,
       quantity = 1,
+      storeSlug = "",
     } = req.body;
 
 
@@ -218,12 +225,22 @@ const createProductInquiry = async (
     const settings =
       await SiteSettings.findOne();
 
-    const configuredNumber = settings?.whatsappNumber || "";
+    let configuredNumber = settings?.whatsappNumber || "";
 
-    if (
-      !settings ||
-      !configuredNumber
-    ) {
+    if (storeSlug) {
+      const store = await Store.findOne({
+        storeSlug: String(storeSlug).trim().toLowerCase(),
+        status: "active",
+      }).populate("user", "phone");
+
+      if (store?.user?.phone) {
+        configuredNumber = store.user.phone;
+      }
+    }
+
+    configuredNumber = whatsappPhone(configuredNumber);
+
+    if (!configuredNumber) {
       return res.status(400).json({
         success: false,
         message:
@@ -233,9 +250,7 @@ const createProductInquiry = async (
 
 
 
-    if (
-      settings.whatsappEnabled === false
-    ) {
+    if (settings?.whatsappEnabled === false) {
       return res.status(400).json({
         success: false,
         message:
@@ -266,8 +281,7 @@ const createProductInquiry = async (
 
 
     const sellingPrice =
-      product.salePrice !== null &&
-      product.salePrice !== undefined
+      product.salePrice > 0
         ? product.salePrice
         : product.price;
 
@@ -277,7 +291,7 @@ const createProductInquiry = async (
 
 
     const message = [
-      settings.whatsappMessage ||
+      settings?.whatsappMessage ||
         "Hello, I want to inquire about this product.",
 
       "",
@@ -457,8 +471,7 @@ const createCartInquiry = async (
           }
 
           const price =
-            product.salePrice !== null &&
-            product.salePrice !== undefined
+            product.salePrice > 0
               ? product.salePrice
               : product.price;
 

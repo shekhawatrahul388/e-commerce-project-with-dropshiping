@@ -83,21 +83,14 @@ const AdminSetting = () => {
       setSettings(data);
 
 
-      if (!localStorage.getItem("theme-mode")) {
-        setThemeMode(
-          data.themeMode === "dark" ? "dark" : "light"
-        );
-      }
+      setThemeMode(
+        data.themeMode === "dark" ? "dark" : "light"
+      );
 
       setDraftThemeMode(data.themeMode === "dark" ? "dark" : "light");
 
 
-      if (
-        !localStorage.getItem("primary-color") &&
-        /^#[0-9a-fA-F]{6}$/.test(
-          data.primaryColor || ""
-        )
-      ) {
+      if (/^#[0-9a-fA-F]{6}$/.test(data.primaryColor || "")) {
         setPrimaryColor(data.primaryColor);
       }
 

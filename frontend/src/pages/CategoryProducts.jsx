@@ -14,6 +14,8 @@ import {
   Star,
 } from "lucide-react";
 import api from "../api/axios";
+import SharedProductCard from "../components/ProductCard";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 
 
@@ -558,6 +560,8 @@ function CategoryProducts() {
     });
   }, [categoryKey, id, slug, navigate]);
 
+  useAutoRefresh(loadCategory);
+
 
 
   const displayedProducts = useMemo(() => {
@@ -640,7 +644,7 @@ function CategoryProducts() {
 
   if (!loading && error) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-4 py-20">
           <div className="max-w-lg mx-auto text-center bg-white rounded-3xl border border-gray-100 p-10">
 
@@ -696,7 +700,7 @@ function CategoryProducts() {
 
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-white">
 
       
 
@@ -733,7 +737,7 @@ function CategoryProducts() {
 
           
 
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
+          <div className="relative overflow-hidden rounded-3xl bg-white border border-gray-100 text-gray-900">
 
             <div className="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
 
@@ -741,7 +745,7 @@ function CategoryProducts() {
 
               
 
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl bg-white/10 border border-white/20 overflow-hidden shrink-0">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl bg-gray-50 border border-gray-200 overflow-hidden shrink-0">
 
                 {categoryImage ? (
                   <img
@@ -761,7 +765,7 @@ function CategoryProducts() {
 
               <div className="text-center md:text-left">
 
-                <div className="inline-flex items-center gap-2 text-sm font-bold text-blue-100">
+                <div className="inline-flex items-center gap-2 text-sm font-bold text-blue-600">
                   <Grid3X3 size={16} />
                   Category Collection
                 </div>
@@ -771,13 +775,13 @@ function CategoryProducts() {
                 </h1>
 
                 {category?.description && (
-                  <p className="mt-3 text-blue-100 max-w-2xl leading-7">
+                  <p className="mt-3 text-gray-500 max-w-2xl leading-7">
                     {category.description}
                   </p>
                 )}
 
                 {!loading && (
-                  <p className="mt-4 text-sm font-semibold text-white/80">
+                  <p className="mt-4 text-sm font-semibold text-gray-500">
                     {products.length}{" "}
                     {products.length === 1
                       ? "product"
@@ -1016,10 +1020,9 @@ function CategoryProducts() {
               >
                 {displayedProducts.map(
                   (product) => (
-                    <ProductCard
+                    <SharedProductCard
                       key={product?._id}
                       product={product}
-                      view={view}
                     />
                   )
                 )}

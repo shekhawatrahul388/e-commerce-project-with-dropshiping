@@ -8,6 +8,7 @@ const {
   changeUserRole,
   deleteUser,
   getUserStatistics,
+  getDropshippingStores,
 } = require("../controller/adminController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -18,6 +19,7 @@ const router = express.Router();
 router.use(authMiddleware, adminMiddleware);
 
 router.post("/create", createAdmin);
+router.get("/dropshipping-stores", getDropshippingStores);
 
 
 

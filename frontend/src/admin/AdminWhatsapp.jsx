@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import api from "../api/axios";
 
 import {
   MessageCircle,
@@ -37,6 +38,10 @@ function AdminWhatsapp() {
   const [saving, setSaving] = useState(false);
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [contacts, setContacts] = useState([]);
+  const [showContactSuggestions, setShowContactSuggestions] = useState(false);
 
 
 
@@ -114,6 +119,48 @@ function AdminWhatsapp() {
 
   useEffect(() => {
     fetchSettings();
+
+    const loadContacts = async () => {
+      try {
+        const [usersResponse, storesResponse] = await Promise.all([
+          api.get("/user/all"),
+          api.get("/admin/dropshipping-stores"),
+        ]);
+
+        const stores = (storesResponse.data?.stores || [])
+          .map((store) => ({
+            id: `store-${store._id}`,
+            name: store.user?.name || store.username || store.storeName,
+            phone: String(store.user?.phone || ""),
+            type: "Dropshipping account",
+            storeName: store.storeName,
+          }))
+          .filter((contact) => contact.phone);
+
+        const storePhones = new Set(stores.map((contact) => contact.phone));
+        const users = (usersResponse.data?.users || [])
+          .filter((user) => !storePhones.has(String(user.phone || "")))
+          .map((user) => ({
+            id: `user-${user._id}`,
+            name: user.name || "Unnamed user",
+            phone: String(user.phone || ""),
+            type: "User",
+          }));
+
+        const uniqueContacts = new Map();
+        [...stores, ...users].forEach((contact) => {
+          if (contact.phone) {
+            uniqueContacts.set(`${contact.phone}-${contact.type}`, contact);
+          }
+        });
+
+        setContacts(Array.from(uniqueContacts.values()));
+      } catch (error) {
+        console.error("CONTACTS LOAD ERROR:", error?.response?.data || error);
+      }
+    };
+
+    loadContacts();
   }, []);
 
 
@@ -148,6 +195,35 @@ function AdminWhatsapp() {
       enabled: !prev.enabled,
     }));
   };
+
+  const sendNotification = (event) => {
+    event.preventDefault();
+
+    const phone = String(recipientPhone || "").replace(/\D/g, "");
+
+    if (phone.length < 10) {
+      toast.error("Enter a valid recipient WhatsApp number");
+      return;
+    }
+
+    if (!notificationMessage.trim()) {
+      toast.error("Enter a message first");
+      return;
+    }
+
+    const formattedPhone = phone.length === 10 ? `91${phone}` : phone;
+    const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(notificationMessage.trim())}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    toast.success("WhatsApp message is ready to send");
+  };
+
+  const contactSearch = recipientPhone.replace(/\D/g, "");
+  const filteredContacts = contacts
+    .filter((contact) => {
+      const searchable = `${contact.name} ${contact.phone} ${contact.storeName || ""}`.toLowerCase();
+      return !contactSearch || searchable.includes(contactSearch) || searchable.includes(recipientPhone.toLowerCase());
+    })
+    .slice(0, 8);
 
 
 
@@ -422,6 +498,74 @@ function AdminWhatsapp() {
             </button>
           </div>
         </div>
+
+        <form onSubmit={sendNotification} className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 text-white">
+              <MessageCircle size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900">Send WhatsApp Notification</h2>
+              <p className="text-sm text-slate-600">Open WhatsApp with a pre-filled message for any user.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[260px_1fr_auto] lg:items-end">
+            <div className="relative">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Recipient phone</label>
+              <input
+                value={recipientPhone}
+                onFocus={() => setShowContactSuggestions(true)}
+                onChange={(event) => {
+                  setRecipientPhone(event.target.value.replace(/\D/g, "").slice(0, 12));
+                  setShowContactSuggestions(true);
+                }}
+                onBlur={() => window.setTimeout(() => setShowContactSuggestions(false), 150)}
+                placeholder="9876543210"
+                inputMode="numeric"
+                className="h-12 w-full rounded-xl border border-green-200 bg-white px-4 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
+              />
+              {showContactSuggestions && filteredContacts.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-72 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                  {filteredContacts.map((contact) => (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setRecipientPhone(contact.phone);
+                        setShowContactSuggestions(false);
+                      }}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-green-50"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-slate-800">{contact.name}</span>
+                        <span className="block truncate text-xs text-slate-500">{contact.phone}{contact.storeName ? ` · ${contact.storeName}` : ""}</span>
+                      </span>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${contact.type === "Dropshipping" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
+                        {contact.type}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Message</label>
+              <textarea
+                value={notificationMessage}
+                onChange={(event) => setNotificationMessage(event.target.value)}
+                rows={2}
+                placeholder="Your order has been updated..."
+                className="w-full rounded-xl border border-green-200 bg-white px-4 py-3 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100"
+              />
+            </div>
+            <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 font-bold text-white hover:bg-green-700">
+              <MessageCircle size={18} />
+              Open WhatsApp
+            </button>
+          </div>
+        </form>
 
         
 

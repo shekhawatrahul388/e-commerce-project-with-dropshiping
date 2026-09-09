@@ -17,7 +17,6 @@ import {
   Store,
   ExternalLink,
 } from "lucide-react";
-
 import AdminNavbar from "./AdminNavbar";
 
 function AdminLayout() {
@@ -96,9 +95,9 @@ function AdminLayout() {
       title: "BUSINESS",
       items: [
         {
-          label: "Suppliers",
+          label: "Dropshipping Accounts",
           icon: Truck,
-          path: "/admin/suppliers",
+          path: "/admin/dropshipping",
         },
         {
           label: "WhatsApp",

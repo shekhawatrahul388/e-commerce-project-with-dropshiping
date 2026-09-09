@@ -54,6 +54,14 @@ const defaultDashboard = {
     total: 0,
   },
 
+  stores: {
+    total: 0,
+    products: 0,
+    recent: [],
+  },
+
+  recentUsers: [],
+
   orders: {
     total: 0,
     pending: 0,
@@ -248,6 +256,14 @@ const AdminDashboard = () => {
         ),
       };
 
+      const stores = {
+        total: toNumber(data.stores?.total),
+        products: toNumber(data.stores?.products),
+        recent: Array.isArray(data.stores?.recent)
+          ? data.stores.recent
+          : [],
+      };
+
 
 
       setDashboard({
@@ -258,6 +274,10 @@ const AdminDashboard = () => {
         wishlist,
         addresses,
         orders,
+        stores,
+        recentUsers: Array.isArray(data.recentUsers)
+          ? data.recentUsers
+          : [],
       });
     } catch (error) {
       console.error(
@@ -397,6 +417,14 @@ const AdminDashboard = () => {
               value={dashboard.users.admins}
               icon={ShieldCheck}
               description="Admin accounts"
+              link="/admin/users"
+            />
+
+            <StatCard
+              title="Store Accounts"
+              value={dashboard.stores.total}
+              icon={Truck}
+              description={`${dashboard.stores.products} products added`}
               link="/admin/users"
             />
           </div>
@@ -698,6 +726,64 @@ const AdminDashboard = () => {
                   {dashboard.addresses.total.toLocaleString()}
                 </span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-800">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Recent Accounts</h3>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Who registered and when</p>
+              </div>
+              <Link to="/admin/users" className="text-sm font-medium text-blue-600">View All</Link>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {dashboard.recentUsers.length ? dashboard.recentUsers.map((account) => (
+                <div key={account._id} className="flex items-center justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-gray-900 dark:text-white">{account.name || "Unnamed user"}</p>
+                    <p className="truncate text-sm text-gray-500 dark:text-gray-400">{account.phone}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs font-bold uppercase text-blue-600">{account.role}</p>
+                    <p className="text-xs text-gray-400">{account.createdAt ? new Date(account.createdAt).toLocaleDateString("en-IN") : "-"}</p>
+                  </div>
+                </div>
+              )) : <p className="p-6 text-sm text-gray-500">No accounts found.</p>}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-800">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Dropshipping Stores</h3>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Store owners and their accounts</p>
+              </div>
+              <span className="text-sm font-bold text-blue-600">{dashboard.stores.total} total</span>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {dashboard.stores.recent.length ? dashboard.stores.recent.map((store) => (
+                <div key={store._id} className="flex items-center justify-between gap-4 p-4">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-gray-900 dark:text-white">{store.storeName}</p>
+                    <p className="truncate text-sm text-gray-500 dark:text-gray-400">{store.user?.name || store.username} {store.user?.phone ? `(${store.user.phone})` : ""}</p>
+                    {store.storeSlug && (
+                      <a
+                        href={`/store/${encodeURIComponent(store.storeSlug)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        className="mt-1 block truncate text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        {window.location.origin}/store/{store.storeSlug}
+                      </a>
+                    )}
+                  </div>
+                  <p className="shrink-0 text-xs text-gray-400">{store.createdAt ? new Date(store.createdAt).toLocaleDateString("en-IN") : "-"}</p>
+                </div>
+              )) : <p className="p-6 text-sm text-gray-500">No stores created yet.</p>}
             </div>
           </div>
         </section>

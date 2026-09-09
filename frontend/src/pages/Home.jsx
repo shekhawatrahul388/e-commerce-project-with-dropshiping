@@ -18,6 +18,8 @@ import {
 
 import { toast } from "react-hot-toast";
 import api from "../api/axios";
+import SharedProductCard from "../components/ProductCard";
+import { useAutoRefresh } from "../utils/autoRefresh";
 
 
 
@@ -258,8 +260,7 @@ function Home() {
 
 
 
-  useEffect(() => {
-    const loadHome = async () => {
+  const loadHome = async () => {
       setLoading(true);
       setProductLoading(true);
 
@@ -294,8 +295,11 @@ function Home() {
 
       setProductLoading(false);
       setLoading(false);
-    };
+  };
 
+  useAutoRefresh(loadHome);
+
+  useEffect(() => {
     loadHome();
   }, []);
 
@@ -432,6 +436,20 @@ Please share more details.`
       currentBanner?.desktopImage
   );
 
+  const bannerLink =
+    currentBanner?.link ||
+    currentBanner?.buttonUrl ||
+    "/products";
+
+  const handleBannerClick = () => {
+    if (/^https?:\/\//i.test(bannerLink)) {
+      window.open(bannerLink, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    navigate(bannerLink);
+  };
+
 
 
   if (loading) {
@@ -465,7 +483,19 @@ Please share more details.`
           <div className="relative w-full">
 
             
-            <div className="relative h-[420px] sm:h-[480px] lg:h-[560px] overflow-hidden">
+            <div
+              className="relative h-[420px] sm:h-[480px] lg:h-[560px] overflow-hidden cursor-pointer"
+              onClick={handleBannerClick}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleBannerClick();
+                }
+              }}
+              role="link"
+              tabIndex={0}
+              aria-label="Open banner"
+            >
 
               {bannerImage ? (
                 <img
@@ -509,11 +539,8 @@ Please share more details.`
                     <div className="flex flex-wrap gap-3 mt-7">
 
                       <Link
-                        to={
-                          currentBanner?.link ||
-                            currentBanner?.buttonUrl ||
-                          "/products"
-                        }
+                        to={bannerLink}
+                        onClick={(event) => event.stopPropagation()}
                         className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transition shadow-lg"
                       >
                         Shop Now
@@ -522,6 +549,7 @@ Please share more details.`
 
                       <Link
                         to="/categories"
+                        onClick={(event) => event.stopPropagation()}
                         className="inline-flex items-center gap-2 px-6 py-3.5 bg-white/10 backdrop-blur border border-white/30 text-white rounded-xl font-bold hover:bg-white/20 transition"
                       >
                         Explore Categories
@@ -537,7 +565,10 @@ Please share more details.`
                 <>
                   <button
                     type="button"
-                    onClick={previousBanner}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      previousBanner();
+                    }}
                     className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg"
                   >
                     <ChevronLeft size={22} />
@@ -545,7 +576,10 @@ Please share more details.`
 
                   <button
                     type="button"
-                    onClick={nextBanner}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      nextBanner();
+                    }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg"
                   >
                     <ChevronRight size={22} />
@@ -619,7 +653,7 @@ Please share more details.`
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x-0 lg:divide-x divide-gray-100">
 
             
-            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+            <Link to="/products" className="flex items-center gap-3 py-6 px-3 lg:px-6 hover:bg-blue-50/60 transition">
               <div className="w-11 h-11 shrink-0 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Truck size={22} />
               </div>
@@ -633,10 +667,10 @@ Please share more details.`
                   Quick & reliable
                 </p>
               </div>
-            </div>
+            </Link>
 
             
-            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+            <Link to="/categories" className="flex items-center gap-3 py-6 px-3 lg:px-6 hover:bg-green-50/60 transition">
               <div className="w-11 h-11 shrink-0 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
                 <ShieldCheck size={22} />
               </div>
@@ -650,10 +684,10 @@ Please share more details.`
                   Trusted products
                 </p>
               </div>
-            </div>
+            </Link>
 
             
-            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+            <Link to="/products" className="flex items-center gap-3 py-6 px-3 lg:px-6 hover:bg-purple-50/60 transition">
               <div className="w-11 h-11 shrink-0 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                 <Package size={22} />
               </div>
@@ -667,10 +701,10 @@ Please share more details.`
                   Many products
                 </p>
               </div>
-            </div>
+            </Link>
 
             
-            <div className="flex items-center gap-3 py-6 px-3 lg:px-6">
+            <Link to="/support" className="flex items-center gap-3 py-6 px-3 lg:px-6 hover:bg-orange-50/60 transition">
               <div className="w-11 h-11 shrink-0 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
                 <Headphones size={22} />
               </div>
@@ -684,7 +718,7 @@ Please share more details.`
                   We're here to help
                 </p>
               </div>
-            </div>
+            </Link>
 
           </div>
         </div>
@@ -792,20 +826,15 @@ Please share more details.`
       
 
       <section className="py-14 sm:py-16 bg-white">
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           <div className="flex items-end justify-between gap-4 mb-8">
-
             <div>
               <p className="text-blue-600 font-bold text-sm uppercase tracking-wider">
                 Our Collection
               </p>
-
               <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-1">
                 Featured Products
               </h2>
-
               <p className="text-gray-500 mt-2">
                 Explore some of our latest products.
               </p>
@@ -818,56 +847,27 @@ Please share more details.`
               View All
               <ArrowRight size={17} />
             </Link>
-
           </div>
 
           {productLoading ? (
             <div className="py-20 flex justify-center">
-              <Loader2
-                size={35}
-                className="animate-spin text-blue-600"
-              />
+              <Loader2 size={35} className="animate-spin text-blue-600" />
             </div>
           ) : products.length > 0 ? (
-
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-
               {products
-                .filter(
-                  (product) =>
-                    product?.isActive !== false
-                )
+                .filter((product) => product?.isActive !== false)
                 .slice(0, 8)
                 .map((product) => (
-                  <ProductCard
-                    key={
-                      product?._id ||
-                      product?.id
-                    }
+                  <SharedProductCard
+                    key={product?._id || product?.id}
                     product={product}
-                    onInquiry={handleInquiry}
                   />
                 ))}
-
             </div>
-
           ) : (
-
-            <div className="py-20 text-center">
-
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
-                <Package size={30} />
-              </div>
-
-              <h3 className="mt-4 text-lg font-bold text-gray-900">
-                No products available
-              </h3>
-
-              <p className="mt-1 text-gray-500">
-                Products will appear here once
-                they are added.
-              </p>
-
+            <div className="py-20 text-center text-gray-500">
+              No products available
             </div>
           )}
 
@@ -878,121 +878,10 @@ Please share more details.`
             View All Products
             <ArrowRight size={18} />
           </Link>
-
         </div>
       </section>
 
       
-
-      <section className="py-16">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 p-7 sm:p-10 lg:p-14">
-
-            
-            <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-white/10" />
-
-            <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-white/10" />
-
-            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-
-              <div className="text-white max-w-2xl">
-
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 text-sm font-bold mb-4">
-                  <MessageCircle size={16} />
-                  Quick Inquiry
-                </div>
-
-                <h2 className="text-3xl sm:text-4xl font-black">
-                  Have a question about a product?
-                </h2>
-
-                <p className="mt-3 text-green-50 leading-relaxed">
-                  Contact us directly on WhatsApp
-                  and get product details, pricing
-                  and availability.
-                </p>
-
-              </div>
-
-              {whatsappNumber ? (
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    let number = String(
-                      whatsappNumber
-                    ).replace(/\D/g, "");
-
-                    if (number.length === 10) {
-                      number = `91${number}`;
-                    }
-
-                    const url =
-                      `https://wa.me/${number}`;
-
-                    window.open(
-                      url,
-                      "_blank",
-                      "noopener,noreferrer"
-                    );
-                  }}
-                  className="shrink-0 inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white text-green-600 font-black shadow-xl hover:bg-green-50 transition"
-                >
-                  <MessageCircle size={21} />
-                  Chat on WhatsApp
-                </button>
-
-              ) : (
-
-                <Link
-                  to="/products"
-                  className="shrink-0 inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-white text-green-600 font-black shadow-xl hover:bg-green-50 transition"
-                >
-                  Browse Products
-                  <ArrowRight size={20} />
-                </Link>
-
-              )}
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      
-
-      <section className="pb-16">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="rounded-3xl bg-gray-900 p-8 sm:p-12 text-center">
-
-            <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto">
-              <Package size={25} />
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-5">
-              Find something you love
-            </h2>
-
-            <p className="text-gray-400 mt-3 max-w-lg mx-auto">
-              Browse our complete collection and
-              discover your next favorite product.
-            </p>
-
-            <Link
-              to="/products"
-              className="inline-flex items-center gap-2 mt-7 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition"
-            >
-              Explore Products
-              <ArrowRight size={18} />
-            </Link>
-
-          </div>
-        </div>
-      </section>
 
     </main>
   );

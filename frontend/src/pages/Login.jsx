@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Loader2,
   ArrowLeft,
+  Phone,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
@@ -32,6 +33,7 @@ const VerifyOtp = () => {
 
   const phone = location.state?.phone || "";
 
+  const [loginPhone, setLoginPhone] = useState("");
 
 
   const [otp, setOtp] = useState("");
@@ -41,12 +43,6 @@ const VerifyOtp = () => {
 
   useEffect(() => {
     if (!phone) {
-      toast.error("Mobile number not found");
-
-      navigate("/send-otp", {
-        replace: true,
-      });
-
       return;
     }
 
@@ -54,6 +50,28 @@ const VerifyOtp = () => {
       inputRef.current?.focus();
     }, 100);
   }, [phone, navigate]);
+
+  const handleLoginOtp = async (e) => {
+    e.preventDefault();
+    const cleanPhone = loginPhone.replace(/\D/g, "").slice(0, 10);
+
+    if (cleanPhone.length !== 10) {
+      toast.error("Phone number must be 10 digits");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.post(`${API_URL}/api/user/login-otp`, { phone: cleanPhone });
+      sessionStorage.setItem("loginPhone", cleanPhone);
+      navigate("/verify-otp", { replace: true, state: { phone: cleanPhone } });
+      toast.success("Login OTP sent successfully");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Unable to send login OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 
@@ -253,6 +271,42 @@ const VerifyOtp = () => {
   };
 
 
+
+  if (!phone) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-10">
+        <form onSubmit={handleLoginOtp} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+            <Phone size={32} className="text-blue-600" />
+          </div>
+          <h1 className="text-center text-2xl font-black text-gray-900">Login</h1>
+          <p className="mt-2 text-center text-sm text-gray-500">Use your registered mobile number</p>
+          <label htmlFor="login-phone" className="mt-6 block text-sm font-bold text-gray-700">Mobile Number</label>
+          <div className="mt-2 flex">
+            <span className="flex items-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 px-3 font-bold text-gray-700">+91</span>
+            <input
+              id="login-phone"
+              type="tel"
+              value={loginPhone}
+              onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="Enter registered number"
+              maxLength={10}
+              inputMode="numeric"
+              disabled={loading}
+              className="min-w-0 flex-1 rounded-r-xl border border-gray-200 bg-gray-50 px-4 py-3.5 outline-none focus:border-blue-500 focus:bg-white"
+            />
+          </div>
+          <button type="submit" disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 font-bold text-white hover:bg-blue-700 disabled:opacity-60">
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+            {loading ? "Sending..." : "Send Login OTP"}
+          </button>
+          <button type="button" onClick={() => navigate("/send-otp")} className="mt-4 w-full text-sm font-bold text-blue-600">
+            New user? Register here
+          </button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-10">

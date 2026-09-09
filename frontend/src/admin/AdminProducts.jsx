@@ -45,6 +45,7 @@ function AdminProducts() {
     supplierProductId: "",
     supplierUrl: "",
     supplierPrice: "",
+    commissionPercent: "0",
   };
 
 
@@ -387,6 +388,12 @@ function AdminProducts() {
         product.supplierPrice !== null
           ? product.supplierPrice
           : "",
+
+      commissionPercent:
+        product.commissionPercent !== undefined &&
+        product.commissionPercent !== null
+          ? product.commissionPercent
+          : "0",
     });
 
     setShowModal(true);
@@ -455,6 +462,11 @@ function AdminProducts() {
         toast.error("Valid supplier price is required for dropshipping product");
         return false;
       }
+    }
+
+    if (form.commissionPercent === "" || Number(form.commissionPercent) < 0 || Number(form.commissionPercent) > 100 || Number.isNaN(Number(form.commissionPercent))) {
+      toast.error("Commission must be between 0 and 100 percent");
+      return false;
     }
 
     return true;
@@ -544,6 +556,8 @@ function AdminProducts() {
 
         supplierPrice:
           form.dropshipping ? Number(form.supplierPrice) : 0,
+
+        commissionPercent: Number(form.commissionPercent),
 
         tags: [],
       };
@@ -2252,6 +2266,23 @@ function AdminProducts() {
                           className="w-full h-11 pl-9 pr-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-2">
+                        Dropshipper Commission %
+                      </label>
+                      <input
+                        type="number"
+                        name="commissionPercent"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={form.commissionPercent}
+                        onChange={handleChange}
+                        placeholder="0"
+                        className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm"
+                      />
                     </div>
                   </>
                 )}

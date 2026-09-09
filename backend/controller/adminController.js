@@ -2,6 +2,48 @@ const User = require("../models/User");
 const Address = require("../models/Address");
 const Cart = require("../models/cart");
 const Wishlist = require("../models/wishlist");
+const Store = require("../models/Store");
+const StoreProduct = require("../models/StoreProduct");
+
+const getDropshippingStores = async (req, res) => {
+  try {
+    const stores = await Store.find()
+      .populate("user", "name phone role isVerified")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const storeProducts = await StoreProduct.find()
+      .populate("product", "name price salePrice image stock")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const productsByStore = new Map();
+    storeProducts.forEach((item) => {
+      const storeId = String(item.store);
+      const items = productsByStore.get(storeId) || [];
+      items.push(item);
+      productsByStore.set(storeId, items);
+    });
+
+    const data = stores.map((store) => ({
+      ...store,
+      products: productsByStore.get(String(store._id)) || [],
+    }));
+
+    return res.status(200).json({
+      success: true,
+      totalStores: data.length,
+      totalStoreProducts: storeProducts.length,
+      stores: data,
+    });
+  } catch (error) {
+    console.error("GET DROPSHIPPING STORES ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch dropshipping stores",
+    });
+  }
+};
 
 
 const createAdmin = async (req, res) => {
@@ -303,4 +345,5 @@ module.exports = {
   changeUserRole,
   deleteUser,
   getUserStatistics,
+  getDropshippingStores,
 };
