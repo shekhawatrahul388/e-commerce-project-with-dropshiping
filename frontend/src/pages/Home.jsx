@@ -54,7 +54,7 @@ const getImageUrl = (image) => {
 
   const baseUrl =
     import.meta.env.VITE_API_URL ||
-    "https://dropshiping-products-backend-3.onrender.com/api";
+    "https://e-commerce-project-with-dropshiping.onrender.com/api";
 
 
   const serverUrl = baseUrl.replace(/\/api\/?$/, "");

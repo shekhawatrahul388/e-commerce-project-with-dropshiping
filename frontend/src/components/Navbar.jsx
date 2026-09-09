@@ -23,7 +23,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import api from "../api/axios";
 
-const API_URL = (import.meta.env.VITE_API_URL || "https://dropshiping-products-backend-3.onrender.com/api").replace(/\/api\/?$/, "");
+const API_URL = (import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping.onrender.com/api").replace(/\/api\/?$/, "");
 
 function Navbar() {
   const navigate = useNavigate();

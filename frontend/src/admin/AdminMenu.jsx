@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://dropshiping-products-backend-3.onrender.com/api";
+  import.meta.env.VITE_API_URL || "https://e-commerce-project-with-dropshiping.onrender.com/api";
 
 const initialForm = {
   title: "",
